@@ -1,24 +1,23 @@
-# Fase di Build
+# 1. Fase di Build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copiamo tutto il contenuto della cartella corrente
+# Copia il file di progetto usando il wildcard per non sbagliare maiuscole
+COPY *.csproj ./
+RUN dotnet restore
+
+# Copia tutto il resto (ora che Program.cs è corretto)
 COPY . .
 
-# --- DIAGNOSTICA ---
-# Questo comando stamperà nella console di GitHub i file che Docker vede.
-# Ci aiuterà a capire se il .csproj è nella root o in una sottocartella.
-RUN ls -R
-# -------------------
+# Pubblica in modalità Release nella cartella /app/out
+RUN dotnet publish -c Release -o /app/out
 
-# Eseguiamo il restore puntando esplicitamente alla cartella corrente
-RUN dotnet restore "./CiaoMondoApi.csproj" || dotnet restore
-
-RUN dotnet publish -c Release -o /app/publish
-
-# Fase di Runtime
+# 2. Fase di Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/publish .
 
-ENTRYPOINT ["dotnet", "CiaoMondoApi.dll"]
+# Copia i binari dalla fase di build
+COPY --from=build /app/out .
+
+# Usa il wildcard anche qui per far partire la DLL qualunque sia il nome
+ENTRYPOINT ["sh", "-c", "dotnet *.dll"]
