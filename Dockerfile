@@ -4,11 +4,8 @@ WORKDIR /src
 
 # 1. Copia solo il file di progetto e ripristina le dipendenze
 # Questo passaggio è separato per sfruttare la cache di Docker
-COPY *.csproj ./
-RUN dotnet restore
-
-# 2. Copia tutto il resto e compila
 COPY . .
+RUN dotnet restore
 RUN dotnet publish -c Release -o /publish
 
 # Fase finale: Runtime
