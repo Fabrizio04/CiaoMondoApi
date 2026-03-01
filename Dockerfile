@@ -1,14 +1,22 @@
 # Fase di compilazione
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copia i file e compila
-COPY . .
+# 1. Copia solo il file di progetto e ripristina le dipendenze
+# Questo passaggio è separato per sfruttare la cache di Docker
+COPY *.csproj ./
 RUN dotnet restore
-RUN dotnet publish -c Release -o out
 
-# Immagine finale leggera
+# 2. Copia tutto il resto e compila
+COPY . .
+RUN dotnet publish -c Release -o /publish
+
+# Fase finale: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out .
+
+# 3. Copia i file compilati dalla cartella /publish della fase precedente
+COPY --from=build /publish .
+
+# 4. Assicurati che il nome della DLL sia corretto!
 ENTRYPOINT ["dotnet", "CiaoMondoApi.dll"]
